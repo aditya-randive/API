@@ -1,0 +1,60 @@
+#!/usr/bin/env python3
+import sys
+import time
+import json
+import requests
+import urllib3
+from urllib3.exceptions import InsecureRequestWarning
+urllib3.disable_warnings(InsecureRequestWarning)
+
+IP = '10.45.140.160'
+USER = 'admin'
+PASSWORD = 'Nutanix.123'
+
+# (1) Make Session
+session = requests.Session()
+session.auth = (USER, PASSWORD)
+session.verify = False
+session.headers.update({'Content-Type': 'application/json; charset=utf-8'})
+
+# (2) Make URL
+NTXPRISMCENTRAL = '10.45.140.160:9440'
+NTXBASEURL3 = 'https://10.45.140.160:9440/api/nutanix/v3/idempotence_identifiers'
+NTXBASEURL2 = 'https://{prismhost}/PrismGateway/services/rest/{version}/vms'.format(prismhost=NTXPRISMCENTRAL, version='v2.0')
+
+def createCrashConsistentVMS(entity_uuid, name, uuid):
+	urlrun = 'https://{prismhost}/api/nutanix/{version}/vm_snapshots'.format(prismhost=NTXPRISMCENTRAL, version='v3')
+	data = {
+      "spec": {
+        "resources": {
+          "entity_uuid": entity_uuid
+        },
+        "snapshot_type": "CRASH_CONSISTENT",
+        "name": name
+      },
+      "api_version": "3.1",
+      "metadata": {
+        "kind": "vm_snapshot",
+        "uuid": uuid
+      }
+    }
+	createVM_response = session.post(urlrun, json=data)
+	if createVM_response.ok:
+		print(createVM_response.text)
+		print("-------------------")
+		print("Newly created Snap UUID: " + createVM_response.text)
+		print("-------------------")
+	else:
+		print(createVM_response)
+
+
+def main():
+	print("Usage:  ./createCrashConsistentVMS <entity_uuid> <name> <uuid>: \n")
+	parameter_name_1 = sys.argv[1]
+	parameter_name_2 = sys.argv[2]
+	parameter_name_3 = sys.argv[3]
+	#getattr(sys.modules[__name__], method_name)(parameter_name_1, parameter_name_2, parameter_name_3)
+	createCrashConsistentVMS(parameter_name_1, parameter_name_2, parameter_name_3)
+
+if __name__ == "__main__":
+	main()

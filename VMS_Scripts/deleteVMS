@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+import sys
+import time
+import json
+import requests
+import urllib3
+from urllib3.exceptions import InsecureRequestWarning
+urllib3.disable_warnings(InsecureRequestWarning)
+
+IP = '10.45.140.160'
+USER = 'admin'
+PASSWORD = 'Nutanix.123'
+
+# (1) Make Session
+session = requests.Session()
+session.auth = (USER, PASSWORD)
+session.verify = False
+session.headers.update({'Content-Type': 'application/json; charset=utf-8'})
+
+# (2) Make URL
+NTXPRISMCENTRAL = '10.45.140.160:9440'
+NTXBASEURL3 = 'https://10.45.140.160:9440/api/nutanix/v3/idempotence_identifiers'
+NTXBASEURL2 = 'https://{prismhost}/PrismGateway/services/rest/{version}/vms'.format(prismhost=NTXPRISMCENTRAL, version='v2.0')
+
+def deleteVMS(VMSnap_UUID):
+	urlrun = 'https://{prismhost}/api/nutanix/{version}/vm_snapshots/{uuid}'.format(prismhost=NTXPRISMCENTRAL, version='v3', uuid=VMSnap_UUID)
+	delVM_response = session.delete(urlrun)
+	print(delVM_response.text)
+
+def main():
+	print("Usage:  ./deleteVMS <VMSnap_UUID>: \n")
+	parameter_name_1 = sys.argv[1]
+	deleteVMS(parameter_name_1)
+
+if __name__ == "__main__":
+	main()	
