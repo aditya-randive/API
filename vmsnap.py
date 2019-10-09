@@ -1,6 +1,7 @@
 #ADITYA RANDIVE
 #aditya.randive@nutanix.com
 
+import sys
 import time
 import json
 import requests
@@ -24,8 +25,9 @@ NTXBASEURL3 = 'https://10.45.140.160:9440/api/nutanix/v3/idempotence_identifiers
 NTXBASEURL2 = 'https://{prismhost}/PrismGateway/services/rest/{version}/vms'.format(prismhost=NTXPRISMCENTRAL, version='v2.0')
 
 testVM_UUID = '353b1148-7259-46ea-ba01-9e715ef4b378'
-testVMSnap_UUID = '825a454f-4311-4b6c-80a9-731c87591cb9'
 
+#testVMSnap_UUID = '825a454f-4311-4b6c-80a9-731c87591cb9'
+#testVMSnap_UUID = '00000000-0000-0000-0000-000000000000'
 # (3) Send request and get Response
 #response3 = session.get(NTXBASEURL3)
 #response2 = session.get(NTXBASEURL2)
@@ -33,12 +35,12 @@ testVMSnap_UUID = '825a454f-4311-4b6c-80a9-731c87591cb9'
 # (4) Check response code
 
 # (5) Check response body
-resp_var = json.loads(response2.text)
-print(resp_var['entities'][0]['name'])
-print(resp_var['entities'][0]['uuid'])
+#resp_var = json.loads(response2.text)
+#print(resp_var['entities'][0]['name'])
+#print(resp_var['entities'][0]['uuid'])
 #=================================================================================================
 # (6) VM Snapshots API
-def getSingleVMSnapDetails():
+def getSingleVMSnapDetails(testVMSnap_UUID):
 	getVMsnaps = 'https://{prismhost}/api/nutanix/v3/vm_snapshots/{uuid}'.format(prismhost = NTXPRISMCENTRAL, uuid = testVMSnap_UUID)
 	getVMsnaps_response = session.get(getVMsnaps)
 	print(getVMsnaps_response.text)
@@ -49,7 +51,7 @@ def getSingleVMSnapDetails():
 	else:
 		print('ERROR: Could not get VM Snapshots')
 #=================================================================================================
-def createVMS():
+def createCrashConsistentVMS(entity_uuid, name, uuid):
 	urlrun = 'https://{prismhost}/api/nutanix/{version}/vm_snapshots'.format(prismhost=NTXPRISMCENTRAL, version='v3')
 	data = {
       "spec": {
@@ -57,12 +59,12 @@ def createVMS():
           "entity_uuid": testVM_UUID
         },
         "snapshot_type": "CRASH_CONSISTENT",
-        "name": "newSnap1"
+        "name": name
       },
       "api_version": "3.1",
       "metadata": {
         "kind": "vm_snapshot",
-        "uuid": "a63b1c33-b349-4538-86b9-51e98c597fe2"
+        "uuid": uuid
       }
     }
 	createVM_response = session.post(urlrun, json=data)
@@ -84,12 +86,12 @@ def getIdentifier():
 	id_response = session.get(urlrun)
 	print(id_response.text)
 #=================================================================================================
-def createSnapID():
+def createSnapID(client_identifier, count=1):
 	urlrun = 'https://{prismhost}/api/nutanix/{version}/idempotence_identifiers'.format(prismhost=NTXPRISMCENTRAL, version='v3')
 
 	data = {
-        "count": 1,
-        "client_identifier": "idList2"
+        "count": count,
+        "client_identifier": client_identifier
 	}
 	snapID_response = session.post(urlrun, data=json.dumps(data))
 	if snapID_response.ok:
@@ -119,10 +121,29 @@ def main():
 	print("IN MAIN")
 	#createSnapID()
 	#getIdentifier()
-	#createVMS()
+	#createCrashConsistentVMS()
 	#getSingleVMSnapDetails()
-	listAllVMSnaps()
+	#listAllVMSnaps()
 	#deleteVMS()
+
+	method_name = "listAllVMSnaps"
+	if not len(sys.argv) > 1:
+		method_name = "listAllVMSnaps"
+	else:
+		method_name = sys.argv[1]
+
+	if method_name == "getSingleVMSnapDetails":
+		getSingleVMSnapDetails(*sys.argv[2:])
+	elif method_name == "createCrashConsistentVMS":
+		#parameter_name_1 = sys.argv[2]
+		#parameter_name_2 = sys.argv[3]
+		#parameter_name_3 = sys.argv[4]
+		#getattr(sys.modules[__name__], method_name)(parameter_name_1, parameter_name_2, parameter_name_3)
+		createCrashConsistentVMS(*sys.argv[2:])
+	elif method_name == "createSnapID":
+		createSnapID(*sys.argv[3:])
+	else:
+		listAllVMSnaps()
 
 if __name__ == "__main__":
 	main()
